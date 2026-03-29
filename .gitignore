@@ -1,2 +1,4 @@
 .env
+
+# Remove this file from version control and add your actual API key here
 /scrapegraphai
