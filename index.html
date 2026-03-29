@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="GeoScrape SE2026 — Platform Intelijen Geospasial BPS Sensus Ekonomi 2026">
+  <title>SE2026 · GeoScrape Intelligence</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+  <!-- External Styles -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════
+       LOADER
+       ══════════════════════════════════════════════ -->
+  <div id="loader">
+    <div class="loader-title">Geo<span>Scrape</span> SE2026</div>
+    <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+    <div class="loader-sub">BPS · Sensus Ekonomi 2026 · Memuat peta...</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       HEADER
+       ══════════════════════════════════════════════ -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon"><i class="fas fa-satellite-dish"></i></div>
+      <div>
+        <div class="logo-text">Geo<span>Scrape</span></div>
+        <div class="logo-sub">SE2026 · BPS INTELLIGENCE</div>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="status-dot"></div>
+      <span id="statusText">SISTEM SIAP</span>
+    </div>
+
+    <div class="header-right">
+      <div class="badge" id="dataBadge">0 USAHA</div>
+      <div class="api-key-chip"><i class="fas fa-key"></i>SGAI ···fa74c8</div>
+      <button class="btn btn-secondary btn-header-export"
+              style="padding:5px 11px;font-size:10px"
+              onclick="openModal('exportModal')">
+        <i class="fas fa-file-export"></i>
+        <span class="btn-text">Ekspor</span>
+      </button>
+      <div class="btn-menu" onclick="toggleMobilePanel()" title="Buka Panel">
+        <i class="fas fa-bars"></i>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════
+       MAIN CONTENT
+       ══════════════════════════════════════════════ -->
+  <div class="main">
+
+    <!-- Mobile panel backdrop -->
+    <div class="panel-backdrop" id="panelBackdrop" onclick="closeMobilePanel()"></div>
+
+    <!-- ════════════════════════════════════════════
+         LEFT PANEL
+         ════════════════════════════════════════════ -->
+    <div class="left-panel" id="leftPanel">
+
+      <!-- Tab Navigation -->
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('scrape')">
+          <i class="fas fa-spider"></i> SCRAPE
+        </div>
+        <div class="tab" onclick="switchTab('results')">
+          <i class="fas fa-list"></i> HASIL
+        </div>
+        <div class="tab" onclick="switchTab('analysis')">
+          <i class="fas fa-chart-bar"></i> ANALISIS
+        </div>
+        <div class="tab" onclick="switchTab('settings')">
+          <i class="fas fa-cog"></i> SETING
+        </div>
+      </div>
+
+      <!-- ── TAB: SCRAPE ──────────────────────────── -->
+      <div class="tab-content active" id="tab-scrape">
+
+        <!-- Backend Connection -->
+        <div>
+          <div class="section-label">Backend Python</div>
+          <div style="display:flex;gap:7px">
+            <input type="text" id="beUrl" value="http://localhost:8000"
+                   placeholder="http://localhost:8000" style="flex:1"/>
+            <button class="btn btn-secondary" style="padding:8px 10px;white-space:nowrap"
+                    onclick="checkBackend()" title="Cek Koneksi">
+              <i class="fas fa-plug"></i>
+            </button>
+          </div>
+          <div class="backend-status chk" id="beStatus" style="margin-top:6px">
+            <i class="fas fa-circle-notch spin"></i> Memeriksa backend...
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <!-- Target Wilayah -->
+        <div>
+          <div class="section-label">Target Wilayah</div>
+          <div>
+            <label>Nama Wilayah / Kota / Kecamatan</label>
+            <input type="text" id="wilayah" value="Medan Kota"
+                   placeholder="cth: Medan Kota, Medan Sunggal..."/>
+          </div>
+          <div class="input-group" style="margin-top:8px">
+            <div>
+              <label>Provinsi</label>
+              <input type="text" id="provinsi" value="Sumatera Utara"/>
+            </div>
+            <div>
+              <label>Radius (km)</label>
+              <input type="number" id="radius" value="5" min="1" max="50"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <!-- Sumber Data -->
+        <div>
+          <div class="section-label">Sumber Data</div>
+          <div class="chip-group" id="chip-sources">
+            <div class="chip active" data-v="google_maps">📍 Google Maps</div>
+            <div class="chip active" data-v="instagram">📸 Instagram</div>
+            <div class="chip active" data-v="facebook">👥 Facebook</div>
+            <div class="chip" data-v="tokopedia">🛒 Tokopedia</div>
+            <div class="chip" data-v="shopee">🟠 Shopee</div>
+            <div class="chip" data-v="bukalapak">🔴 Bukalapak</div>
+            <div class="chip" data-v="web_umum">🌐 Web Umum</div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <!-- Kategori KBLI -->
+        <div>
+          <div class="section-label">Kategori Usaha (KBLI)</div>
+          <div class="chip-group" id="chip-kategori">
+            <div class="chip active" data-v="kuliner">🍜 Kuliner</div>
+            <div class="chip active" data-v="fashion">👗 Fashion</div>
+            <div class="chip active" data-v="elektronik">📱 Elektronik</div>
+            <div class="chip" data-v="kesehatan">💊 Kesehatan</div>
+            <div class="chip" data-v="otomotif">🚗 Otomotif</div>
+            <div class="chip" data-v="jasa">🔧 Jasa</div>
+            <div class="chip" data-v="pertanian">🌾 Pertanian</div>
+            <div class="chip" data-v="pendidikan">📚 Pendidikan</div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <!-- Prompt -->
+        <div>
+          <div class="section-label">Prompt Scraping</div>
+          <textarea id="promptText" placeholder="Instruksi tambahan untuk AI scraper...">Fokus pada usaha UMKM aktif dengan kehadiran online. Prioritaskan usaha dengan nomor WhatsApp/HP dan rating pelanggan.</textarea>
+        </div>
+
+        <!-- Config Row -->
+        <div class="input-group">
+          <div>
+            <label>Maks. Hasil</label>
+            <input type="number" id="maxResults" value="50" min="10" max="500"/>
+          </div>
+          <div>
+            <label>Timeout (dtk)</label>
+            <input type="number" id="timeout" value="60" min="15" max="300"/>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <button class="btn btn-primary btn-full" id="btnScrape" onclick="startScraping()">
+          <i class="fas fa-satellite-dish"></i> MULAI SCRAPING
+        </button>
+        <button class="btn btn-secondary btn-full" onclick="loadDemoData()" style="font-size:10px">
+          <i class="fas fa-database"></i> Muat Data Demo (offline)
+        </button>
+
+        <!-- Progress Indicator -->
+        <div id="scrapeProgress" style="display:none">
+          <div class="scraping-banner">
+            <i class="fas fa-circle-notch spin" style="color:var(--accent)"></i>
+            <div>
+              <div style="font-size:11px;font-weight:500" id="progressMsg">Menginisialisasi...</div>
+              <div style="font-size:9px;color:var(--muted)" id="progressSub">ScrapeGraphAI</div>
+            </div>
+          </div>
+          <div style="margin-top:7px">
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:3px">
+              <span>Progress</span>
+              <span id="progressPct">0%</span>
+            </div>
+            <div class="progress-wrap">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Log -->
+        <div>
+          <div class="section-label">Log Sistem</div>
+          <div class="log-box" id="logBox">
+            <div class="log-entry inf">[SYS] GeoScrape SE2026 · sgai-···fa74c8</div>
+            <div class="log-entry">[MAP] Google Hybrid basemap aktif</div>
+          </div>
+        </div>
+
+      </div><!-- /tab-scrape -->
+
+      <!-- ── TAB: HASIL ───────────────────────────── -->
+      <div class="tab-content" id="tab-results">
+        <div class="stat-grid">
+          <div class="stat-card c-blue">
+            <div class="val" id="statTotal">0</div>
+            <div class="lbl">Total Usaha</div>
+          </div>
+          <div class="stat-card c-orange">
+            <div class="val" id="statPlatform">0</div>
+            <div class="lbl">Platform</div>
+          </div>
+          <div class="stat-card c-green">
+            <div class="val" id="statKategori">0</div>
+            <div class="lbl">Kategori</div>
+          </div>
+          <div class="stat-card c-gold">
+            <div class="val" id="statRating">-</div>
+            <div class="lbl">Avg Rating</div>
+          </div>
+        </div>
+
+        <input type="text" id="searchInput"
+               placeholder="🔍 Cari nama usaha, kategori, kecamatan..."
+               oninput="filterResults(this.value)"/>
+
+        <div id="resultList">
+          <div class="empty-state">
+            <i class="fas fa-satellite-dish"></i>
+            Belum ada data. Mulai scraping atau muat data demo.
+          </div>
+        </div>
+      </div><!-- /tab-results -->
+
+      <!-- ── TAB: ANALISIS ────────────────────────── -->
+      <div class="tab-content" id="tab-analysis">
+        <div class="analysis-card">
+          <div class="analysis-title">📊 Distribusi Kategori Usaha</div>
+          <canvas id="chartKategori" height="150"></canvas>
+        </div>
+        <div class="analysis-card">
+          <div class="analysis-title">🌐 Platform Digital</div>
+          <canvas id="chartPlatform" height="130"></canvas>
+        </div>
+        <div class="analysis-card">
+          <div class="analysis-title">⭐ Distribusi Rating Pelanggan</div>
+          <canvas id="chartRating" height="110"></canvas>
+        </div>
+        <div class="analysis-card">
+          <div class="analysis-title">🔥 Hotspot Kecamatan</div>
+          <div id="hotspotList">
+            <div style="font-size:11px;color:var(--muted)">Belum ada data</div>
+          </div>
+        </div>
+        <div class="analysis-card">
+          <div class="analysis-title">🤖 AI Insight (Claude Sonnet)</div>
+          <div id="insightText">Jalankan scraping untuk mendapatkan analisis AI.</div>
+        </div>
+      </div><!-- /tab-analysis -->
+
+      <!-- ── TAB: SETING ──────────────────────────── -->
+      <div class="tab-content" id="tab-settings">
+
+        <div class="section-label">Panduan Backend</div>
+        <div class="code-block">
+          <b>1. Install dependencies:</b><br>
+          <code>pip install fastapi uvicorn scrapegraph-py pydantic</code><br><br>
+          <b>2. Jalankan server:</b><br>
+          <code>python backend.py</code><br><br>
+          <b>3. Klik 🔌 di tab Scrape untuk connect.</b><br><br>
+          Tanpa backend → <b style="color:var(--accent)">SGAI Direct API</b> dari browser (fallback).
+        </div>
+
+        <div class="section-label">Tampilan Peta</div>
+        <div>
+          <label>Layer Peta</label>
+          <select id="layerSelect" onchange="applyMapLayer(this.value)">
+            <option value="hybrid">🛰️ Google Hybrid (Default)</option>
+            <option value="satellite">🛰️ Google Satelit</option>
+            <option value="roadmap">🗺️ Google Roadmap</option>
+            <option value="terrain">🏔️ Google Terrain</option>
+          </select>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;margin-top:4px">
+          <div class="toggle-row">
+            <span>Heatmap KDE</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="togHeat" onchange="toggleHeatmap(this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <span>Panel Analisis Spasial</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="togSpatial" checked
+                     onchange="toggleSpatialBox(this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-label">Tentang Aplikasi</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.8">
+          <b style="color:var(--text)">GeoScrape SE2026</b><br>
+          Platform intelijen geospasial untuk mendukung Sensus Ekonomi 2026 BPS RI.<br><br>
+          <b style="color:var(--accent)">Backend :</b> Python FastAPI + ScrapeGraphAI SDK<br>
+          <b style="color:var(--accent)">Peta    :</b> Leaflet.js + Google Maps Hybrid<br>
+          <b style="color:var(--accent)">Analisis:</b> KDE Heatmap, Moran's I, Cluster<br>
+          <b style="color:var(--accent)">AI      :</b> Claude Sonnet 4 (Insight Otomatis)
+        </div>
+
+        <button class="btn btn-danger btn-full" onclick="clearAllData()">
+          <i class="fas fa-trash"></i> Hapus Semua Data
+        </button>
+
+      </div><!-- /tab-settings -->
+
+    </div><!-- /left-panel -->
+
+    <!-- ════════════════════════════════════════════
+         MAP AREA
+         ════════════════════════════════════════════ -->
+    <div class="map-area">
+      <div id="map"></div>
+
+      <!-- Map Toolbar -->
+      <div class="map-toolbar">
+        <div class="map-btn" title="Fit ke Semua Data" onclick="fitMapBounds()">
+          <i class="fas fa-compress-arrows-alt"></i>
+        </div>
+        <div class="map-btn" title="Toggle Heatmap" id="heatBtn"
+             onclick="toggleHeatmap(!isHeatOn)">
+          <i class="fas fa-fire"></i>
+        </div>
+        <div class="map-btn" title="Ekspor Data" onclick="openModal('exportModal')">
+          <i class="fas fa-download"></i>
+        </div>
+        <div class="map-btn" title="Muat Data Demo" onclick="loadDemoData()">
+          <i class="fas fa-database"></i>
+        </div>
+        <!-- Spatial panel toggle (mobile only) -->
+        <div class="map-btn" title="Panel Spasial" id="spatialToggleBtn"
+             onclick="toggleMobileSpatial()" style="display:none">
+          <i class="fas fa-chart-area"></i>
+        </div>
+      </div>
+
+      <!-- Map Legend -->
+      <div class="map-legend">
+        <div class="map-legend-title">KATEGORI USAHA</div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#e53935"></div>Kuliner
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#8e24aa"></div>Fashion
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#1e88e5"></div>Elektronik
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#43a047"></div>Kesehatan
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#fb8c00"></div>Otomotif
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#00acc1"></div>Jasa
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#fdd835"></div>Lainnya
+        </div>
+      </div>
+
+      <!-- Spatial Analysis Box -->
+      <div class="spatial-box" id="spatialBox">
+        <div class="spatial-title">📡 ANALISIS SPASIAL</div>
+        <div class="spatial-row">
+          <span class="spatial-label">Kepadatan</span>
+          <span class="spatial-value" id="spDensity">-</span>
+        </div>
+        <div class="spatial-row">
+          <span class="spatial-label">Moran's I</span>
+          <span class="spatial-value" id="spMoran">-</span>
+        </div>
+        <div class="spatial-row">
+          <span class="spatial-label">Radius Cakupan</span>
+          <span class="spatial-value" id="spRadius">-</span>
+        </div>
+        <div class="spatial-row">
+          <span class="spatial-label">Centroid</span>
+          <span class="spatial-value" id="spCentroid">-</span>
+        </div>
+        <div class="spatial-row">
+          <span class="spatial-label">Cluster Dominan</span>
+          <span class="spatial-value" id="spCluster">-</span>
+        </div>
+      </div>
+
+    </div><!-- /map-area -->
+
+  </div><!-- /main -->
+
+  <!-- ══════════════════════════════════════════════
+       BOTTOM NAV (mobile only, shown via CSS)
+       ══════════════════════════════════════════════ -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <div class="bottom-nav-item active" onclick="mobileNavClick('scrape')">
+        <i class="fas fa-spider"></i>SCRAPE
+      </div>
+      <div class="bottom-nav-item" onclick="mobileNavClick('results')">
+        <i class="fas fa-list"></i>HASIL
+      </div>
+      <div class="bottom-nav-item" onclick="mobileNavClick('analysis')">
+        <i class="fas fa-chart-bar"></i>ANALISIS
+      </div>
+      <div class="bottom-nav-item" onclick="mobileNavClick('settings')">
+        <i class="fas fa-cog"></i>SETING
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       EXPORT MODAL
+       ══════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal">
+      <span class="modal-close" onclick="closeModal('exportModal')">×</span>
+      <h2><i class="fas fa-file-export" style="color:var(--accent)"></i> Ekspor Data</h2>
+      <p>Ekspor hasil scraping untuk keperluan Sensus Ekonomi 2026.</p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="exportData('json')">
+          <i class="fas fa-code"></i> JSON
+        </button>
+        <button class="btn btn-success-outline" onclick="exportData('csv')">
+          <i class="fas fa-table"></i> CSV
+        </button>
+        <button class="btn btn-secondary" onclick="exportData('geojson')">
+          <i class="fas fa-map"></i> GeoJSON
+        </button>
+        <button class="btn btn-secondary" onclick="exportData('report')">
+          <i class="fas fa-file-alt"></i> Laporan TXT
+        </button>
+      </div>
+      <div style="margin-top:14px;font-size:11px;color:var(--muted)">
+        <i class="fas fa-info-circle"></i>
+        GeoJSON siap diimpor ke QGIS, ArcGIS, atau Google Earth Engine.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TOAST CONTAINER
+       ══════════════════════════════════════════════ -->
+  <div id="toastContainer"></div>
+
+  <!-- ══════════════════════════════════════════════
+       SCRIPTS
+       ══════════════════════════════════════════════ -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Mobile: show spatial toggle only on small screens -->
+  <script>
+    (function checkSpatialBtn() {
+      function update() {
+        const btn = document.getElementById('spatialToggleBtn');
+        if (btn) btn.style.display = window.innerWidth <= 640 ? 'flex' : 'none';
+      }
+      window.addEventListener('resize', update);
+      document.addEventListener('DOMContentLoaded', update);
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+# GeoScrape SE2026 — Backend Requirements
+
+# Core
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+
+# ScrapeGraphAI SDK (UTAMA)
+scrapegraph-py>=1.7.0
+
+# Data & validation
+pydantic>=2.0.0
+
+# Utilities
+python-dotenv>=1.0.0
