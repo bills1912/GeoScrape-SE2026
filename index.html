@@ -2,9 +2,12 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0d1117">
   <meta name="description" content="GeoScrape SE2026 — Platform Intelijen Geospasial BPS Sensus Ekonomi 2026">
+  <!-- iOS fullscreen support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>SE2026 · GeoScrape Intelligence</title>
 
   <!-- Fonts -->
@@ -426,21 +429,25 @@
   </div><!-- /main -->
 
   <!-- ══════════════════════════════════════════════
-       BOTTOM NAV (mobile only, shown via CSS)
+       BOTTOM NAV (mobile only — ditampilkan via CSS)
        ══════════════════════════════════════════════ -->
-  <nav class="bottom-nav">
+  <nav class="bottom-nav" id="bottomNav">
     <div class="bottom-nav-inner">
-      <div class="bottom-nav-item active" onclick="mobileNavClick('scrape')">
-        <i class="fas fa-spider"></i>SCRAPE
+      <div class="bottom-nav-item active" id="nav-scrape" onclick="mobileNavClick('scrape')">
+        <i class="fas fa-spider"></i>
+        <span>SCRAPE</span>
       </div>
-      <div class="bottom-nav-item" onclick="mobileNavClick('results')">
-        <i class="fas fa-list"></i>HASIL
+      <div class="bottom-nav-item" id="nav-results" onclick="mobileNavClick('results')">
+        <i class="fas fa-list"></i>
+        <span>HASIL</span>
       </div>
-      <div class="bottom-nav-item" onclick="mobileNavClick('analysis')">
-        <i class="fas fa-chart-bar"></i>ANALISIS
+      <div class="bottom-nav-item" id="nav-analysis" onclick="mobileNavClick('analysis')">
+        <i class="fas fa-chart-bar"></i>
+        <span>ANALISIS</span>
       </div>
-      <div class="bottom-nav-item" onclick="mobileNavClick('settings')">
-        <i class="fas fa-cog"></i>SETING
+      <div class="bottom-nav-item" id="nav-settings" onclick="mobileNavClick('settings')">
+        <i class="fas fa-cog"></i>
+        <span>SETING</span>
       </div>
     </div>
   </nav>
@@ -486,15 +493,28 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="js/app.js"></script>
 
-  <!-- Mobile: show spatial toggle only on small screens -->
+  <!-- Mobile: show spatial toggle & fix body height on mobile -->
   <script>
-    (function checkSpatialBtn() {
-      function update() {
-        const btn = document.getElementById('spatialToggleBtn');
-        if (btn) btn.style.display = window.innerWidth <= 640 ? 'flex' : 'none';
+    (function init() {
+      function updateMobileUI() {
+        const isMobile = window.innerWidth <= 640;
+
+        // Tampilkan tombol spatial toggle hanya di mobile
+        const spatialBtn = document.getElementById('spatialToggleBtn');
+        if (spatialBtn) spatialBtn.style.display = isMobile ? 'flex' : 'none';
+
+        // Pada mobile, pastikan map area sudah terpapar dengan benar
+        // setelah bottom nav muncul
+        if (window.leafletMap) {
+          window.leafletMap.invalidateSize();
+        }
       }
-      window.addEventListener('resize', update);
-      document.addEventListener('DOMContentLoaded', update);
+
+      window.addEventListener('resize', updateMobileUI);
+      document.addEventListener('DOMContentLoaded', updateMobileUI);
+
+      // Jalankan sekali saat script dimuat
+      if (document.readyState !== 'loading') updateMobileUI();
     })();
   </script>
 

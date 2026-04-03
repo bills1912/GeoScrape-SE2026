@@ -19,7 +19,7 @@
   --success:   #2ed573;
   --panel-w:   420px;
   --header-h:  52px;
-  --nav-h:     52px;   /* bottom nav for mobile */
+  --nav-h:     56px;   /* bottom nav for mobile — sedikit lebih tinggi agar touch target nyaman */
 }
 
 /* ── Reset ─────────────────────────────────────────────────────── */
@@ -471,27 +471,63 @@ code { color: var(--accent3); font-size: 10px; font-family: 'Space Mono', monosp
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   z-index: 600;
+  /* Safe area untuk notch/home bar iPhone */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .bottom-nav-inner {
-  display: flex; height: 100%;
+  display: flex;
+  height: 100%;
+  align-items: stretch;
 }
 .bottom-nav-item {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 3px; cursor: pointer;
-  color: var(--muted); font-size: 9px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 9px;
   font-family: 'Space Mono', monospace;
+  letter-spacing: 0.3px;
   border-top: 2px solid transparent;
-  transition: all .2s;
+  transition: color .2s, border-color .2s, background .2s;
+  /* Perbesar tap target tanpa mempengaruhi layout */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  /* Teks tidak akan wrap / terpotong */
+  white-space: nowrap;
+  padding: 0 2px;
 }
-.bottom-nav-item i { font-size: 16px; }
-.bottom-nav-item.active { color: var(--accent); border-top-color: var(--accent); }
+.bottom-nav-item i {
+  font-size: 17px;
+  line-height: 1;
+  display: block;
+}
+.bottom-nav-item span {
+  display: block;
+  font-size: 8.5px;
+  line-height: 1;
+  margin-top: 1px;
+}
+.bottom-nav-item.active {
+  color: var(--accent);
+  border-top-color: var(--accent);
+  background: rgba(0,212,255,.05);
+}
+.bottom-nav-item:active {
+  background: rgba(0,212,255,.08);
+}
 
-/* Overlay backdrop for mobile panel */
+/* Overlay backdrop untuk mobile panel */
 .panel-backdrop {
   display: none;
   position: fixed; inset: 0;
   background: rgba(0,0,0,.6); z-index: 490;
+  /* Pastikan backdrop benar-benar full screen */
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
 }
 .panel-backdrop.visible { display: block; }
 
@@ -523,99 +559,171 @@ code { color: var(--accent3); font-size: 10px; font-family: 'Space Mono', monosp
   :root {
     --header-h: 48px;
     --panel-w: 100vw;
+    --nav-h: 56px;
   }
 
-  /* Header simplification */
-  header { padding: 0 12px; }
+  /* ── Header ── */
+  header { padding: 0 12px; gap: 8px; }
   .header-center { display: none; }
   .badge { font-size: 9px; padding: 2px 7px; }
   .btn-menu { display: flex; }
-
-  /* Export button in header becomes icon-only */
+  /* Export button — icon only */
   .btn-header-export .btn-text { display: none; }
   .btn-header-export { padding: 5px 9px; }
 
-  /* Main layout becomes stacked */
-  .main { flex-direction: column; }
+  /* ── Layout ── */
+  .main {
+    flex-direction: column;
+    /* Map area fills space below header, above bottom nav */
+    position: relative;
+  }
 
-  /* Left panel slides in as overlay */
+  /* ── Left panel slides in as overlay ── */
   .left-panel {
     position: fixed;
+    /* Mulai tepat di bawah header */
     top: var(--header-h);
     left: 0;
+    /* Tinggi = layar dikurangi header dan bottom nav */
     bottom: var(--nav-h);
-    width: 100%;
-    max-width: 360px;
+    height: auto;
+    width: min(360px, 92vw);
     transform: translateX(-100%);
     z-index: 500;
-    box-shadow: 4px 0 20px rgba(0,0,0,.6);
+    box-shadow: 4px 0 24px rgba(0,0,0,.7);
+    border-right: 1px solid var(--border);
   }
   .left-panel.open {
     transform: translateX(0);
   }
 
-  /* Map fills full screen */
+  /* ── Map fills full viewport under header & above bottom nav ── */
   .map-area {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    bottom: var(--nav-h);
+    z-index: 1;
+  }
+  #map {
     position: absolute;
     inset: 0;
-    top: var(--header-h);
-    bottom: var(--nav-h);
   }
 
-  /* Bottom nav visible on mobile */
-  .bottom-nav { display: flex; }
+  /* ── Bottom nav — FIXED, selalu di bawah ── */
+  .bottom-nav {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 600;
+    height: var(--nav-h);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    /* Safe area iPhone X+ */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .bottom-nav-inner {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    align-items: stretch;
+  }
+  .bottom-nav-item {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 4px 6px;
+    gap: 3px;
+    /* Pastikan tidak overflow */
+    overflow: hidden;
+  }
+  .bottom-nav-item i { font-size: 18px; }
+  .bottom-nav-item span { font-size: 8px; letter-spacing: 0; }
 
-  /* Spatial box — smaller and repositioned */
+  /* ── Spatial box ── */
+  /* Default: disembunyikan di mobile, muncul lewat tombol toggle */
   .spatial-box {
-    width: calc(100% - 20px);
-    bottom: 10px; right: 10px; left: 10px;
+    position: absolute;
+    left: 10px; right: 10px;
+    bottom: 10px;
     width: auto;
-    flex-direction: row; flex-wrap: wrap; gap: 8px;
-    padding: 8px 10px;
-    display: none; /* hidden by default on mobile, toggle button shows it */
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
   }
-  .spatial-box.mobile-visible { display: flex; }
-  .spatial-title { width: 100%; margin-bottom: 2px; }
-  .spatial-row { width: calc(50% - 4px); border-bottom: none; padding: 2px 0; font-size: 9px; }
+  .spatial-box.mobile-visible {
+    display: flex;
+  }
+  .spatial-title { width: 100%; margin-bottom: 4px; }
+  .spatial-row { padding: 3px 0; font-size: 9px; }
 
-  /* Map legend — compact */
+  /* ── Map legend ── posisikan di atas bottom nav, kiri ── */
   .map-legend {
-    left: 10px; bottom: 10px;
-    padding: 7px 9px; min-width: 0;
+    /* Jangan sampai ketutup bottom nav */
+    bottom: 10px;
+    left: 10px;
+    padding: 7px 9px;
+    min-width: 0;
   }
-  .legend-item { font-size: 9px; gap: 5px; }
-  .map-legend-title { font-size: 8px; }
+  .legend-item { font-size: 9px; gap: 5px; margin-bottom: 3px; }
+  .map-legend-title { font-size: 8px; margin-bottom: 5px; }
 
-  /* Map toolbar moves to right side */
+  /* ── Map toolbar — pindah ke kanan ── */
   .map-toolbar { left: auto; right: 10px; top: 10px; }
 
-  /* Modal full-screen on mobile */
-  .modal { padding: 18px; border-radius: 12px 12px 0 0; }
-  .modal-overlay { align-items: flex-end; padding: 0; }
+  /* ── Modal full-screen dari bawah ── */
+  .modal {
+    padding: 18px;
+    border-radius: 16px 16px 0 0;
+    max-height: 80vh;
+  }
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
 
-  /* Toast at bottom center */
-  #toast-container { bottom: calc(var(--nav-h) + 12px); right: 12px; left: 12px; align-items: center; }
+  /* ── Toast di atas bottom nav ── */
+  #toast-container {
+    bottom: calc(var(--nav-h) + 12px);
+    right: 12px;
+    left: 12px;
+    align-items: center;
+  }
   .toast { max-width: 100%; }
 
-  /* Stat grid — 4 cols on mobile */
+  /* ── Stat grid 2×2 ── */
   .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
   .stat-card .val { font-size: 18px; }
 
-  /* Chips larger tap targets */
+  /* ── Chips: larger tap targets ── */
   .chip { padding: 6px 11px; font-size: 10px; }
 
-  /* Input groups stack on very small screens */
+  /* ── Input groups: stack vertikal ── */
   .input-group { flex-direction: column; gap: 6px; }
 
-  /* Log box smaller on mobile */
+  /* ── Log box: lebih kecil ── */
   .log-box { max-height: 80px; font-size: 9px; }
 
-  /* Tab content padding */
+  /* ── Tab content padding ── */
   .tab-content { padding: 12px; gap: 10px; }
 
-  /* Loader title smaller */
+  /* ── Loader ── */
   .loader-title { font-size: 22px; }
   .loader-sub { font-size: 10px; }
+
+  /* ── Leaflet zoom control: jangan overlap bottom nav ── */
+  .leaflet-bottom.leaflet-left {
+    bottom: 10px !important;
+  }
+  /* Leaflet attribution: jangan overlap bottom nav */
+  .leaflet-control-attribution {
+    font-size: 8px !important;
+    max-width: 180px;
+  }
 }
 
 /* ================================================================
@@ -627,6 +735,8 @@ code { color: var(--accent3); font-size: 10px; font-family: 'Space Mono', monosp
   .badge { display: none; }
   .stat-card .val { font-size: 16px; }
   .tab { font-size: 8px; padding: 8px 1px; }
+  .bottom-nav-item span { font-size: 7px; }
+  .bottom-nav-item i { font-size: 16px; }
 }
 
 /* ================================================================

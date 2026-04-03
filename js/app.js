@@ -40,11 +40,13 @@ const PLATFORM_CLASS = {
   bukalapak:   'p-bukalapak',
 };
 
+const TAB_NAMES = ['scrape', 'results', 'analysis', 'settings'];
+
 /* ── State ─────────────────────────────────────────────────────── */
 let allData = [], filteredData = [];
 let leafletMap, tileLayer, heatLayer, markerGroup;
-let isHeatOn  = false;
-let isBackendOk = false;
+let isHeatOn     = false;
+let isBackendOk  = false;
 let chartInstances = {};
 
 /* ================================================================
@@ -63,6 +65,9 @@ function initMap() {
     zoomControl: false,
     preferCanvas: true,
   });
+
+  // Expose globally agar script inline bisa akses
+  window.leafletMap = leafletMap;
 
   L.control.zoom({ position: 'bottomleft' }).addTo(leafletMap);
   applyMapLayer('hybrid');
@@ -121,7 +126,7 @@ async function checkBackend() {
    SCRAPING ORCHESTRATOR
    ================================================================ */
 async function startScraping() {
-  const wilayah = document.getElementById('wilayah').value.trim();
+  const wilayah  = document.getElementById('wilayah').value.trim();
   const provinsi = document.getElementById('provinsi').value.trim();
   if (!wilayah) { showToast('Masukkan nama wilayah', 'error'); return; }
 
@@ -133,7 +138,6 @@ async function startScraping() {
   const timeout    = parseInt(document.getElementById('timeout').value) || 60;
   const promptText = document.getElementById('promptText').value;
 
-  // UI state: scraping started
   const btn = document.getElementById('btnScrape');
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-circle-notch spin"></i> SCRAPING...';
@@ -142,7 +146,6 @@ async function startScraping() {
   sysLog(`Mulai scraping: ${wilayah}, ${provinsi}`, 'inf');
 
   let results = [];
-
   if (isBackendOk) {
     results = await scrapeViaBackend({ wilayah, provinsi, radius_km: 5, sources, kategori, prompt_tambahan: promptText, max_results: maxResults, timeout });
   } else {
@@ -321,7 +324,7 @@ async function fetchBaseCoords(wilayah, provinsi) {
     const data = await res.json();
     if (data[0]) return { lat: +data[0].lat, lng: +data[0].lon };
   } catch { /* ignore */ }
-  return { lat: 3.5952, lng: 98.6722 }; // Default: Medan
+  return { lat: 3.5952, lng: 98.6722 };
 }
 
 function enrichWithCoordinates(arr, base) {
@@ -363,7 +366,7 @@ async function loadDemoData() {
   const platforms = ['google_maps', 'instagram', 'facebook', 'tokopedia', 'shopee', 'bukalapak'];
   const streets   = ['Gatot Subroto', 'Sudirman', 'Diponegoro', 'Ahmad Yani', 'Imam Bonjol', 'Panglima Denai'];
 
-  const demo = [];
+  const demo   = [];
   const catKeys = Object.keys(businessByCategory);
 
   catKeys.forEach((kat, ki) => {
@@ -455,7 +458,6 @@ function toggleHeatmap(on) {
 }
 
 function createHeatmapLayer(points) {
-  // Fallback heatmap using transparent circles when L.heatLayer unavailable
   if (typeof L.heatLayer === 'function') {
     return L.heatLayer(points, {
       radius: 30, blur: 22, maxZoom: 18,
@@ -474,10 +476,10 @@ function createHeatmapLayer(points) {
 
 /* ── Stat Cards ────────────────────────────────────────────────── */
 function updateStatCards() {
-  const n       = allData.length;
-  const plats   = new Set(allData.map(b => b.platform)).size;
-  const kats    = new Set(allData.map(b => b.kategori)).size;
-  const rated   = allData.filter(b => b.rating);
+  const n     = allData.length;
+  const plats = new Set(allData.map(b => b.platform)).size;
+  const kats  = new Set(allData.map(b => b.kategori)).size;
+  const rated = allData.filter(b => b.rating);
   const avgRating = rated.length
     ? (rated.reduce((s, b) => s + b.rating, 0) / rated.length).toFixed(1)
     : '-';
@@ -527,14 +529,15 @@ function zoomToBusiness(id) {
   const b = allData.find(x => x.id === id);
   if (b?.lat) {
     leafletMap.setView([b.lat, b.lng], 17);
-    closeMobilePanel(); // close panel on mobile after selecting
+    // Di mobile: tutup panel agar peta terlihat
+    if (window.innerWidth <= 640) closeMobilePanel();
   }
 }
 
 /* ── Charts ────────────────────────────────────────────────────── */
 function renderCharts() {
-  const katCount  = countBy(allData, 'kategori');
-  const platCount = countBy(allData, 'platform');
+  const katCount   = countBy(allData, 'kategori');
+  const platCount  = countBy(allData, 'platform');
   const ratingBins = [0, 0, 0, 0, 0];
   allData.forEach(b => {
     if (!b.rating) return;
@@ -608,10 +611,10 @@ function computeSpatialAnalysis() {
   const lngs   = pts.map(b => b.lng);
   const radius = haversine(Math.min(...lats), Math.min(...lngs), Math.max(...lats), Math.max(...lngs)) / 2;
   const area   = Math.PI * radius * radius;
-  const density  = (pts.length / Math.max(area, 0.01)).toFixed(1);
-  const moranI   = (0.3 + Math.random() * 0.35).toFixed(3);
-  const kecCount = countBy(pts, 'kecamatan');
-  const topKec   = Object.entries(kecCount).sort((a, b) => b[1] - a[1])[0];
+  const density   = (pts.length / Math.max(area, 0.01)).toFixed(1);
+  const moranI    = (0.3 + Math.random() * 0.35).toFixed(3);
+  const kecCount  = countBy(pts, 'kecamatan');
+  const topKec    = Object.entries(kecCount).sort((a, b) => b[1] - a[1])[0];
 
   document.getElementById('spDensity').textContent  = `${density}/km²`;
   document.getElementById('spMoran').textContent    = `${moranI} (clustered)`;
@@ -633,7 +636,7 @@ function haversine(lat1, lng1, lat2, lng2) {
 }
 
 /* ================================================================
-   AI INSIGHT (via Claude API)
+   AI INSIGHT
    ================================================================ */
 async function generateAIInsight(wilayah, provinsi) {
   document.getElementById('insightText').innerHTML = '<i class="fas fa-circle-notch spin"></i> Menghasilkan AI insight...';
@@ -734,15 +737,24 @@ function buildTextReport() {
 /* ================================================================
    UI HELPERS
    ================================================================ */
-function switchTab(name) {
-  const tabNames = ['scrape', 'results', 'analysis', 'settings'];
-  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', tabNames[i] === name));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
 
-  // Also update bottom nav
-  document.querySelectorAll('.bottom-nav-item').forEach((item, i) => {
-    item.classList.toggle('active', tabNames[i] === name);
+/**
+ * Ganti tab aktif — update panel tabs, bottom nav, dan konten
+ */
+function switchTab(name) {
+  // Update tab bar di panel
+  const tabEls = document.querySelectorAll('.tabs .tab');
+  tabEls.forEach((t, i) => t.classList.toggle('active', TAB_NAMES[i] === name));
+
+  // Update konten
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const content = document.getElementById('tab-' + name);
+  if (content) content.classList.add('active');
+
+  // Update bottom nav — gunakan id supaya lebih robust
+  TAB_NAMES.forEach(n => {
+    const navItem = document.getElementById('nav-' + n);
+    if (navItem) navItem.classList.toggle('active', n === name);
   });
 }
 
@@ -782,32 +794,61 @@ function toggleMobilePanel() {
   const backdrop = document.getElementById('panelBackdrop');
   const isOpen   = panel.classList.toggle('open');
   backdrop.classList.toggle('visible', isOpen);
-}
-function closeMobilePanel() {
-  const isMobile = window.innerWidth <= 640;
-  if (!isMobile) return;
-  document.getElementById('leftPanel').classList.remove('open');
-  document.getElementById('panelBackdrop').classList.remove('visible');
+  // Update hamburger icon
+  const menuBtn = document.querySelector('.btn-menu i');
+  if (menuBtn) menuBtn.className = isOpen ? 'fas fa-times' : 'fas fa-bars';
 }
 
-/* ── Mobile Tab + Panel ────────────────────────────────────────── */
+function closeMobilePanel() {
+  const panel    = document.getElementById('leftPanel');
+  const backdrop = document.getElementById('panelBackdrop');
+  panel.classList.remove('open');
+  backdrop.classList.remove('visible');
+  const menuBtn = document.querySelector('.btn-menu i');
+  if (menuBtn) menuBtn.className = 'fas fa-bars';
+}
+
+/**
+ * Klik bottom nav di mobile:
+ * - Ganti tab
+ * - Buka panel jika belum terbuka
+ * - Jika nav yang sama diklik lagi saat panel terbuka → tutup panel
+ */
 function mobileNavClick(tabName) {
-  switchTab(tabName);
-  // Toggle panel: if already open on same tab, close; else open
-  const panel = document.getElementById('leftPanel');
   const isMobile = window.innerWidth <= 640;
+  const panel    = document.getElementById('leftPanel');
+  const isOpen   = panel.classList.contains('open');
+
   if (isMobile) {
-    if (!panel.classList.contains('open')) {
-      toggleMobilePanel();
+    if (isOpen) {
+      // Cek apakah tab yang sama diklik lagi → tutup
+      const activeTab = document.querySelector('.tabs .tab.active');
+      const activeIdx = [...document.querySelectorAll('.tabs .tab')].indexOf(activeTab);
+      if (TAB_NAMES[activeIdx] === tabName) {
+        closeMobilePanel();
+        return;
+      }
     }
+    // Ganti tab dan buka panel
+    switchTab(tabName);
+    if (!isOpen) {
+      document.getElementById('leftPanel').classList.add('open');
+      document.getElementById('panelBackdrop').classList.add('visible');
+      const menuBtn = document.querySelector('.btn-menu i');
+      if (menuBtn) menuBtn.className = 'fas fa-times';
+    }
+  } else {
+    switchTab(tabName);
   }
 }
 
-/* ── Toggle Spatial Box on Mobile ──────────────────────────────── */
+/* ── Toggle Spatial Box ────────────────────────────────────────── */
 function toggleSpatialBox(on) {
   const el = document.getElementById('spatialBox');
+  if (window.innerWidth <= 640) return; // Mobile: lewat tombol toggle
   el.style.display = on ? '' : 'none';
 }
+
 function toggleMobileSpatial() {
   const el = document.getElementById('spatialBox');
   el.classList.toggle('mobile-visible');
@@ -866,18 +907,20 @@ function escapeHtml(s)  {
    ================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   // Chip toggle
-  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => c.classList.toggle('active')));
+  document.querySelectorAll('.chip').forEach(c =>
+    c.addEventListener('click', () => c.classList.toggle('active'))
+  );
 
-  // Init map after layout is ready (double rAF ensures CSS applied)
+  // Init map setelah layout siap
   requestAnimationFrame(() => requestAnimationFrame(() => {
     initMap();
     setTimeout(() => leafletMap && leafletMap.invalidateSize(), 200);
   }));
 
-  // Check backend after 1.2s
+  // Check backend setelah 1.2 detik
   setTimeout(checkBackend, 1200);
 
-  // Hide loader
+  // Sembunyikan loader
   setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1600);
 });
 
