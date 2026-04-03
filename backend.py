@@ -24,6 +24,8 @@ try:
     from fastapi import FastAPI, HTTPException
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
     from pydantic import BaseModel, Field
     FASTAPI_OK = True
 except ImportError:
@@ -366,6 +368,12 @@ if FASTAPI_OK:
         description="Backend API untuk Sensus Ekonomi 2026 - BPS",
         version="1.0.0"
     )
+    
+    app.mount("/static", StaticFiles(directory="."), name="static")
+
+    @app.get("/app")
+    async def serve_frontend():
+        return FileResponse("index.html")
 
     app.add_middleware(
         CORSMiddleware,
