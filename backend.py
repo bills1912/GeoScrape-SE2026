@@ -374,6 +374,10 @@ if FASTAPI_OK:
     @app.get("/app")
     async def serve_frontend():
         return FileResponse("index.html")
+    
+    # Serve folder css/ dan js/ sebagai static files
+    app.mount("/css", StaticFiles(directory="css"), name="css")
+    app.mount("/js", StaticFiles(directory="js"), name="js")
 
     app.add_middleware(
         CORSMiddleware,
